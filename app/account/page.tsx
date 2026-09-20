@@ -1,30 +1,32 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import {
-  ArrowLeft,
   BusFront,
-  CheckCircle2,
   Heart,
   LogOut,
-  Mail,
-  ShieldCheck,
+  MessageCircle,
+  PlusCircle,
   UserRound,
 } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+const ink = "#16302B";
+const paper = "#FBF8F2";
+const cardBorder = "#E4DCC8";
+const rust = "#B4451F";
+const rustDeep = "#93380F";
+const gold = "#C79A3D";
+const green = "#3F6B58";
+const textMuted = "#5C5546";
+const textFaint = "#8A7F68";
+
+const displayFont = {
+  fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif",
+};
 
 export default async function AccountPage() {
   const supabase = await createClient();
 
-  // Verify the currently authenticated user.
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -33,227 +35,176 @@ export default async function AccountPage() {
     redirect("/login");
   }
 
-  // Get the user's application profile.
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, phone, role")
+    .select("full_name, role, avatar_url")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (profileError && profileError.code !== "PGRST116") {
-    console.error("Profile fetch error:", profileError);
-  }
-
-  const fullName =
-    profile?.full_name ||
-    user.user_metadata?.full_name ||
-    "User";
-
+  const fullName = profile?.full_name || user.user_metadata?.full_name || "User";
   const role = profile?.role || "user";
-
-  const email = user.email || "";
+  const avatarUrl = profile?.avatar_url || null;
+  const isAdmin = role === "admin";
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
+    <main className="min-h-screen" style={{ backgroundColor: paper, color: ink }}>
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
         <div className="mb-8">
-          <Link
-            href="/"
-            className="mb-5 inline-flex items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+          <h1 className="text-3xl font-medium tracking-tight" style={{ ...displayFont, color: ink }}>
+            Account
+          </h1>
+          <p className="mt-2 text-sm" style={{ color: textMuted }}>
+            Manage your profile, messages, favorites, and contributions.
+          </p>
+        </div>
+
+        <div className="grid gap-6">
+          {/* Profile */}
+          <div
+            className="overflow-hidden rounded-3xl bg-white"
+            style={{ border: `1px solid ${cardBorder}`, boxShadow: "0 30px 60px -35px rgba(22,48,43,0.25)" }}
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Link>
+            <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${rust}, ${gold})` }} />
 
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <BusFront className="h-6 w-6" />
+            <div className="p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <UserRound className="h-4 w-4" style={{ color: textFaint }} />
+                  <span className="text-xs font-medium uppercase tracking-wide" style={{ color: textFaint }}>
+                    Profile
+                  </span>
+                </div>
+
+                <Link
+                  href="/account/edit"
+                  className="inline-flex h-9 items-center justify-center rounded-full border px-4 text-sm font-medium transition-colors hover:bg-[#F1ECDD]"
+                  style={{ borderColor: cardBorder, color: ink }}
+                >
+                  Edit profile
+                </Link>
+              </div>
+
+              {/* Banner-style header: avatar with gradient ring + name */}
+              <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
+                <div
+                  className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full p-[3px]"
+                  style={{ background: `linear-gradient(135deg, ${rust}, ${gold})` }}
+                >
+                  <div
+                    className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-white"
+                    style={{ border: `2px solid ${paper}` }}
+                  >
+                    {avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={avatarUrl}
+                        alt={`${fullName}'s profile picture`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <UserRound className="h-10 w-10" style={{ color: textFaint }} />
+                    )}
+                  </div>
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-2xl font-medium" style={{ ...displayFont, color: ink }}>
+                    {fullName}
+                  </h2>
+                  <p className="mt-1 break-all text-sm" style={{ color: textMuted }}>
+                    {user.email}
+                  </p>
+                  <span
+                    className="mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium"
+                    style={
+                      isAdmin
+                        ? { backgroundColor: rust, color: "#FFFFFF" }
+                        : { backgroundColor: "rgba(63,107,88,0.12)", color: green }
+                    }
+                  >
+                    {role}
+                  </span>
+                </div>
+              </div>
             </div>
+          </div>
 
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                My Account
-              </h1>
+          {/* Quick actions */}
+          <div
+            className="overflow-hidden rounded-3xl bg-white"
+            style={{ border: `1px solid ${cardBorder}`, boxShadow: "0 30px 60px -35px rgba(22,48,43,0.25)" }}
+          >
+            <div className="p-5 sm:p-6">
+              <h2 className="text-lg font-medium" style={{ ...displayFont, color: ink }}>
+                Quick actions
+              </h2>
 
-              <p className="mt-1 text-sm text-muted-foreground">
-                Manage your Kerala Bus Finder account.
-              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Link
+                  href="/messages"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium text-white transition-transform hover:-translate-y-0.5"
+                  style={{
+                    background: `linear-gradient(180deg, ${rust}, ${rustDeep})`,
+                    boxShadow: "0 12px 24px -10px rgba(180,69,31,0.55)",
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Messages
+                </Link>
+
+                <Link
+                  href="/favorites"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors hover:bg-[#F1ECDD]"
+                  style={{ borderColor: cardBorder, color: ink }}
+                >
+                  <Heart className="h-4 w-4" style={{ color: rust }} />
+                  Favorites
+                </Link>
+
+                <Link
+                  href="/contributions"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors hover:bg-[#F1ECDD]"
+                  style={{ borderColor: cardBorder, color: ink }}
+                >
+                  <PlusCircle className="h-4 w-4" style={{ color: green }} />
+                  My contributions
+                </Link>
+
+                <Link
+                  href="/add-timetable"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors hover:bg-[#F1ECDD]"
+                  style={{ borderColor: cardBorder, color: ink }}
+                >
+                  <BusFront className="h-4 w-4" style={{ color: gold }} />
+                  Add timetable
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Session */}
+          <div
+            className="overflow-hidden rounded-3xl bg-white"
+            style={{ border: `1px solid ${cardBorder}`, boxShadow: "0 30px 60px -35px rgba(22,48,43,0.25)" }}
+          >
+            <div className="p-5 sm:p-6">
+              <h2 className="text-lg font-medium" style={{ ...displayFont, color: ink }}>
+                Session
+              </h2>
+
+              <form action="/auth/signout" method="post" className="mt-4">
+                <button
+                  type="submit"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors hover:bg-[#FBEEE7]"
+                  style={{ borderColor: "#E8C4B0", color: rust }}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </form>
             </div>
           </div>
         </div>
-
-        {/* Profile */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserRound className="h-5 w-5" />
-              Profile
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* Full name */}
-            <div className="flex items-center gap-4 rounded-xl border p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <UserRound className="h-5 w-5 text-muted-foreground" />
-              </div>
-
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">
-                  Full name
-                </p>
-
-                <p className="mt-1 truncate font-medium">
-                  {fullName}
-                </p>
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="flex items-center gap-4 rounded-xl border p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <Mail className="h-5 w-5 text-muted-foreground" />
-              </div>
-
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">
-                  Email address
-                </p>
-
-                <p className="mt-1 truncate font-medium">
-                  {email}
-                </p>
-              </div>
-            </div>
-
-            {/* Role */}
-            <div className="flex items-center justify-between gap-4 rounded-xl border p-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                  <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    Account role
-                  </p>
-
-                  <p className="mt-1 font-medium capitalize">
-                    {role}
-                  </p>
-                </div>
-              </div>
-
-              <Badge variant={role === "admin" ? "default" : "secondary"}>
-                {role}
-              </Badge>
-            </div>
-
-            {/* Status */}
-            <div className="flex items-center justify-between gap-4 rounded-xl border p-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    Account status
-                  </p>
-
-                  <p className="mt-1 font-medium">
-                    Active
-                  </p>
-                </div>
-              </div>
-
-              <Badge variant="secondary">
-                Active
-              </Badge>
-            </div>
-
-            {profileError && profileError.code !== "PGRST116" && (
-              <div className="rounded-lg border border-amber-300/60 bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
-                Your account is active, but your profile information could
-                not be loaded completely.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Quick actions */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {/* Favorites */}
-          <Card>
-            <CardContent className="p-6">
-              <Heart className="h-6 w-6 text-primary" />
-
-              <h2 className="mt-4 font-semibold">
-                Favorites
-              </h2>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                View your saved bus services.
-              </p>
-
-              <Link
-                href="/favorites"
-                className="mt-4 inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
-              >
-                View Favorites
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Contributions */}
-          <Card>
-            <CardContent className="p-6">
-              <BusFront className="h-6 w-6 text-primary" />
-
-              <h2 className="mt-4 font-semibold">
-                Contribute
-              </h2>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                Submit timetable information for review.
-              </p>
-
-              <Link
-                href="/add-timetable"
-                className="mt-4 inline-flex h-9 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
-              >
-                Add Timetable
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Logout */}
-        <Card className="mt-6">
-          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-semibold">
-                Sign out
-              </h2>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                Sign out of your Kerala Bus Finder account.
-              </p>
-            </div>
-
-            <form action="/auth/signout" method="post">
-              <Button
-                type="submit"
-                variant="destructive"
-                className="w-full sm:w-auto"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
       </div>
     </main>
   );
